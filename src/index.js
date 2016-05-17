@@ -72,17 +72,21 @@ export default function({ types: t, template }) {
 
   const componentVisitor = {
     Class(path) {
-      if (
-        path.node[VISITED_KEY] ||
-        !matchesPatterns(path.get('superClass'), this.superClasses) ||
-        !isReactLikeClass(path.node)
-      ) {
+      if (path.node[VISITED_KEY]) {
         return;
+      }
+      const componentName = path.node.id && path.node.id.name || null;
+      const superClass = path.get('superClass');
+      const superClassName = superClass && superClass.node && superClass.node.name || null;
+            
+      if (superClassName !== componentName+"View") {
+        if (!matchesPatterns(superClass, this.superClasses) && !isReactLikeClass(path.node)) {
+          return;
+        }
       }
 
       path.node[VISITED_KEY] = true;
 
-      const componentName = path.node.id && path.node.id.name || null;
       const componentId = componentName || path.scope.generateUid('component');
       const isInFunction = hasParentFunction(path);
 
@@ -119,8 +123,8 @@ export default function({ types: t, template }) {
     CallExpression(path) {
       if (
         path.node[VISITED_KEY] ||
-        !matchesPatterns(path.get('callee'), this.factoryMethods) ||
-        !isReactLikeComponentObject(path.node.arguments[0])
+        !matchesPatterns(path.get('callee'), this.factoryMethods)
+          //||!isReactLikeComponentObject(path.node.arguments[0])
       ) {
         return;
       }
